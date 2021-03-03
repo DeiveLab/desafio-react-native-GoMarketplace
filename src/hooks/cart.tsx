@@ -30,23 +30,65 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
-    }
+      const newProductsJSON = await AsyncStorage.getItem('@GoMarketplace:products');
+      
+      if (newProductsJSON) {
+        const newProducts = JSON.parse(newProductsJSON);
+        setProducts(newProducts);
+      }
+
+    };
 
     loadProducts();
   }, []);
 
   const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+    const productExists = products.find(item => item.id === product.id);
+
+    if(productExists){
+      await increment(product.id);
+      return;
+    }
+
+    const newProduct = {...product, quantity: 1};
+    const newProducts = [...products, newProduct];
+    setProducts(newProducts);
+
+    const productsJSON = JSON.stringify(newProducts);
+    await AsyncStorage.setItem('@GoMarketplace:products', productsJSON);
+    // await AsyncStorage.removeItem('@GoMarketplace:products');
+    // setProducts([]);
+  }, [products]);
 
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    const updatedProducts = products.map(item => {
+      if (item.id === id) {
+        item.quantity++;
+      }
+
+      return item;
+    });
+
+    const updatedProductsJSON = JSON.stringify(updatedProducts);
+    await AsyncStorage.setItem('@GoMarketplace:products', updatedProductsJSON);
+
+    setProducts(updatedProducts);
+  }, [products]);
 
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    const updatedProducts = products.map(item => {
+      if (item.id === id) {
+        item.quantity--;
+      }
+
+      return item;
+    }).filter(item => item.quantity !== 0);
+
+    const updatedProductsJSON = JSON.stringify(updatedProducts);
+    await AsyncStorage.setItem('@GoMarketplace:products', updatedProductsJSON);
+
+    setProducts(updatedProducts);
+  }, [products]);
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
